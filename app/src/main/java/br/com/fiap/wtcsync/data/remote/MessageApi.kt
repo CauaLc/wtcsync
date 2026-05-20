@@ -7,11 +7,20 @@ import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface MessageApi {
 
+    // Mantido para compatibilidade — busca todas as mensagens de um cliente
     @GET("inbox/{customerId}")
     suspend fun getInbox(@Path("customerId") customerId: String): List<MessageDto>
+
+    // NOVO — busca apenas a conversa entre um operador e um cliente específicos
+    @GET("conversation")
+    suspend fun getConversation(
+        @Query("senderId") senderId: String,
+        @Query("customerId") customerId: String
+    ): List<MessageDto>
 
     @POST("messages")
     suspend fun sendMessage(@Body request: MessageRequest): MessageDto

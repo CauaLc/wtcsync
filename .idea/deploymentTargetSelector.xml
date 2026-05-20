@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-05-19T17:26:59.557886600Z">
+        <DropdownSelection timestamp="2026-05-20T01:22:53.704881400Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\Pichau\.android\avd\Pixel_8a.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\doydo\.android\avd\WTCSync_Test.avd" />
             </handle>
           </Target>
         </DropdownSelection>

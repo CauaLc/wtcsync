@@ -81,7 +81,12 @@ class ChatListViewModel(
             clients.map { client ->
                 async {
                     try {
-                        val messages = messageApi.getInbox(client.id)
+                        // Busca apenas a conversa deste operador com este cliente
+                        val messages = messageApi.getConversation(
+                            senderId   = currentEmail,
+                            customerId = client.id
+                        )
+                        // "received" são as que vieram do cliente (não do operador)
                         val received = messages.filter { it.senderId != currentEmail }
 
                         newCounts[client.id] = received.count { it.status != "ENTREGUE" }
