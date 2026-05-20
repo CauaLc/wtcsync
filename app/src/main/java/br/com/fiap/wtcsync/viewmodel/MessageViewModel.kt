@@ -37,19 +37,23 @@ class MessageViewModel(
     private val disposables = CompositeDisposable()
     private var stompClient: StompClient? = null
 
-    // TROCA PELO IP DA SUA MÁQUINA OU URL DO SERVIDOR
     private val wsUrl = "ws://10.0.2.2:8080/ws/websocket"
 
     init {
-        loadInbox()
+        loadConversation()
         connectWebSocket()
     }
 
-    fun loadInbox(silent: Boolean = false) {
+    // Carrega apenas a conversa entre o operador logado e o cliente
+    fun loadConversation(silent: Boolean = false) {
+        val operadorId = sessionManager.currentEmail ?: return
         viewModelScope.launch {
             if (!silent) _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val messages = messageApi.getInbox(clienteId)
+                val messages = messageApi.getConversation(
+                    senderId   = operadorId,
+                    customerId = clienteId
+                )
                 _uiState.update { it.copy(messages = messages, isLoading = false) }
                 markDelivered(messages)
             } catch (e: Exception) {
@@ -79,12 +83,13 @@ class MessageViewModel(
     }
 
     private fun subscribeToMessages(currentEmail: String) {
-        // Escuta mensagens 1:1 do usuário logado
         val subDisposable = stompClient!!
             .topic("/topic/chat/$currentEmail")
             .subscribe { stompMessage ->
                 try {
                     val message = gson.fromJson(stompMessage.payload, MessageDto::class.java)
+                    // Ignora mensagens de outras conversas recebidas no mesmo tópico
+                    if (message.customerId != clienteId) return@subscribe
                     val current = _uiState.value.messages.toMutableList()
                     if (current.none { it.id == message.id }) {
                         current.add(message)
@@ -117,10 +122,9 @@ class MessageViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSending = true, error = null) }
             try {
-                // Envia via REST (mais confiável para garantir persistência)
                 messageApi.sendMessage(MessageRequest(senderId, clienteId, text))
                 _uiState.update { it.copy(isSending = false) }
-                loadInbox(silent = true)
+                loadConversation(silent = true)
             } catch (e: Exception) {
                 _uiState.update { it.copy(isSending = false, error = e.message) }
             }
