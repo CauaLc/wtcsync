@@ -5,50 +5,53 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import br.com.fiap.wtcsync.R
+import br.com.fiap.wtcsync.theme.Spacing
+import br.com.fiap.wtcsync.ui.components.WtcButton
+import br.com.fiap.wtcsync.ui.components.WtcButtonVariant
 import br.com.fiap.wtcsync.util.Resource
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 
-val YellowPrimary = Color(0xFFFFCC00)
-val BlackPrimary = Color(0xFF1C1C1E)
-val LightBackground = Color(0xFFFFF9EF)
-val DividerColor = Color(0xFFE0E0E0)
-val SubtitleGray = Color(0xFF8A8A8E)
-
-val robotoFamily = FontFamily(
-    Font(R.font.roboto, FontWeight.Bold)
-)
-
-val nunitoFamily = FontFamily(
-    Font(R.font.nunito, FontWeight.Normal)
-)
-
 @Composable
 fun EntryScreen(
     onLoginClick: () -> Unit,
     onRegisterClick: () -> Unit,
-    onLoginSuccess: (String) -> Unit
+    onLoginSuccess: (String) -> Unit,
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as android.app.Application
     val viewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(app))
     val userState by viewModel.userState.collectAsState()
+    val isLoading = userState is Resource.Loading
 
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -65,17 +68,15 @@ fun EntryScreen(
         }
     }
 
-    // Observa mudanças no estado e reage
     LaunchedEffect(userState) {
         when (val state = userState) {
             is Resource.Success -> {
-                Toast.makeText(context, "Login bem-sucedido! Bem-vindo ${state.data?.email}", Toast.LENGTH_SHORT).show()
-                viewModel.resetState() // Reseta o estado após sucesso
+                viewModel.resetState()
                 onLoginSuccess(state.data?.email ?: "")
             }
             is Resource.Error -> {
                 Toast.makeText(context, "Erro: ${state.message}", Toast.LENGTH_LONG).show()
-                viewModel.resetState() // Reseta o estado após erro
+                viewModel.resetState()
             }
             else -> {}
         }
@@ -83,101 +84,82 @@ fun EntryScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = LightBackground
+        color = MaterialTheme.colorScheme.background,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
+                    .padding(Spacing.xl),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 80.dp)
+                    modifier = Modifier.padding(bottom = 80.dp),
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.wtcsync_logo),
                         contentDescription = "Logo WTC Sync",
-                        modifier = Modifier.size(120.dp)
+                        modifier = Modifier.size(120.dp),
                     )
-
-                    Spacer(Modifier.width(24.dp))
-
+                    Spacer(Modifier.width(Spacing.xl))
                     Column {
                         Text(
                             text = "WTC Sync",
-                            fontFamily = robotoFamily,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 40.sp,
-                            color = BlackPrimary
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onBackground,
                         )
                         Text(
                             text = "Em perfeita sintonia com cada cliente.",
-                            fontFamily = nunitoFamily,
-                            fontSize = 20.sp,
-                            color = SubtitleGray
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
 
-                // Botão Login
-                Button(
+                WtcButton(
+                    text = "Login",
                     onClick = onLoginClick,
-                    enabled = userState !is Resource.Loading,
-                    colors = ButtonDefaults.buttonColors(containerColor = YellowPrimary),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                ) {
-                    Text(
-                        "Login",
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
-                    )
-                }
+                    variant = WtcButtonVariant.Primary,
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(Modifier.height(Spacing.sm))
 
-                // Botão Cadastrar
-                Button(
+                WtcButton(
+                    text = "Cadastrar",
                     onClick = onRegisterClick,
-                    enabled = userState !is Resource.Loading,
-                    colors = ButtonDefaults.buttonColors(containerColor = BlackPrimary),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                ) {
-                    Text(
-                        "Cadastrar",
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                    variant = WtcButtonVariant.Secondary,
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(Modifier.height(Spacing.xl))
 
-                // Divisor com "ou"
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Divider(color = DividerColor, thickness = 1.dp, modifier = Modifier.weight(1f))
-                    Text(
-                        "ou",
-                        color = Color.Gray,
-                        modifier = Modifier.padding(horizontal = 8.dp)
+                    HorizontalDivider(
+                        modifier = Modifier.weight(1f),
+                        color = MaterialTheme.colorScheme.outline,
                     )
-                    Divider(color = DividerColor, thickness = 1.dp, modifier = Modifier.weight(1f))
+                    Text(
+                        text = "ou",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = Spacing.sm),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.weight(1f),
+                        color = MaterialTheme.colorScheme.outline,
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(Modifier.height(Spacing.xl))
 
-                // Entrar com Google
                 OutlinedButton(
                     onClick = {
                         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -187,44 +169,22 @@ fun EntryScreen(
                         val client = GoogleSignIn.getClient(context, gso)
                         googleSignInLauncher.launch(client.signInIntent)
                     },
-                    enabled = userState !is Resource.Loading,
+                    enabled = !isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp)
+                        .height(52.dp),
                 ) {
-                    if (userState is Resource.Loading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_google_logo),
-                            contentDescription = "Google logo",
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "Entrar com Google",
-                            color = Color.Black,
-                            fontWeight = FontWeight.Normal,
-                            fontSize = 20.sp
-                        )
-                    }
-                }
-            }
-
-            // Loading overlay quando estiver carregando
-            if (userState is Resource.Loading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = YellowPrimary,
-                        modifier = Modifier.size(48.dp)
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_google_logo),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(Modifier.width(Spacing.sm))
+                    Text(
+                        text = "Entrar com Google",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }

@@ -2,9 +2,17 @@ package br.com.fiap.wtcsync.ui
 
 import android.app.Application
 import android.net.Uri
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -36,13 +44,15 @@ import br.com.fiap.wtcsync.campaigns.ui.list.CampaignListViewModelFactory
 import br.com.fiap.wtcsync.segments.ui.create.CreateSegmentScreen
 import br.com.fiap.wtcsync.segments.ui.create.CreateSegmentViewModel
 import br.com.fiap.wtcsync.segments.ui.create.CreateSegmentViewModelFactory
+import br.com.fiap.wtcsync.theme.WtcMotion
 import br.com.fiap.wtcsync.ui.auth.AuthViewModel
 import br.com.fiap.wtcsync.ui.auth.AuthViewModelFactory
 import br.com.fiap.wtcsync.ui.auth.EntryScreen
 import br.com.fiap.wtcsync.ui.auth.LoginScreen
 import br.com.fiap.wtcsync.ui.auth.RegisterScreen
-import br.com.fiap.wtcsync.ui.components.BottomNavBar
 import br.com.fiap.wtcsync.ui.components.BottomNavTab
+import br.com.fiap.wtcsync.ui.components.WtcBottomNavBar
+import br.com.fiap.wtcsync.ui.components.WtcScaffold
 import br.com.fiap.wtcsync.ui.crm.ChatListScreen
 import br.com.fiap.wtcsync.ui.crm.ClientFormScreen
 import br.com.fiap.wtcsync.ui.crm.ClientesScreen
@@ -59,8 +69,25 @@ fun Navigation(navController: NavHostController) {
     )
     val role by authViewModel.currentRole.collectAsState()
 
-    NavHost(navController = navController, startDestination = "entry") {
-        composable("entry") {
+    val slideEnter  = slideInHorizontally(tween(WtcMotion.LONG)) { it / 4 } + fadeIn(tween(WtcMotion.LONG))
+    val slideExit   = slideOutHorizontally(tween(WtcMotion.LONG)) { -it / 4 } + fadeOut(tween(WtcMotion.MEDIUM))
+    val slidePopEnter  = slideInHorizontally(tween(WtcMotion.LONG)) { -it / 4 } + fadeIn(tween(WtcMotion.LONG))
+    val slidePopExit   = slideOutHorizontally(tween(WtcMotion.LONG)) { it / 4 } + fadeOut(tween(WtcMotion.MEDIUM))
+    val authToHome  = fadeIn(tween(WtcMotion.LONG)) + scaleIn(tween(WtcMotion.LONG), initialScale = 0.98f)
+    val authExitOut = fadeOut(tween(WtcMotion.MEDIUM))
+
+    NavHost(
+        navController = navController,
+        startDestination = "entry",
+        enterTransition  = { slideEnter },
+        exitTransition   = { slideExit },
+        popEnterTransition  = { slidePopEnter },
+        popExitTransition   = { slidePopExit },
+    ) {
+        composable(
+            "entry",
+            exitTransition = { authExitOut },
+        ) {
             EntryScreen(
                 onLoginClick = { navController.navigate("login") },
                 onRegisterClick = { navController.navigate("register") },
@@ -71,7 +98,12 @@ fun Navigation(navController: NavHostController) {
                 }
             )
         }
-        composable("login") {
+        composable(
+            "login",
+            enterTransition  = { slideEnter },
+            exitTransition   = { authExitOut },
+            popExitTransition = { slidePopExit },
+        ) {
             LoginScreen(
                 viewModel = authViewModel,
                 onLoginSuccess = {
@@ -82,7 +114,12 @@ fun Navigation(navController: NavHostController) {
                 onBackClick = { navController.popBackStack() }
             )
         }
-        composable("register") {
+        composable(
+            "register",
+            enterTransition  = { slideEnter },
+            exitTransition   = { authExitOut },
+            popExitTransition = { slidePopExit },
+        ) {
             RegisterScreen(
                 viewModel = authViewModel,
                 onRegisterSuccess = {
@@ -93,7 +130,13 @@ fun Navigation(navController: NavHostController) {
                 onBackClick = { navController.popBackStack() }
             )
         }
-        composable("home") {
+        composable(
+            "home",
+            enterTransition = { authToHome },
+            exitTransition  = { authExitOut },
+            popEnterTransition = { authToHome },
+            popExitTransition  = { authExitOut },
+        ) {
             HomeScreen(
                 navController = navController,
                 userRole = role
@@ -200,17 +243,24 @@ private fun HomeScreen(
         selectedTab = BottomNavTab.CHAT
     }
 
-    Scaffold(
+    WtcScaffold(
         bottomBar = {
-            BottomNavBar(
+            WtcBottomNavBar(
                 tabs = availableTabs,
                 selectedTab = selectedTab,
                 onTabSelected = { selectedTab = it }
             )
         }
     ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
-            when (selectedTab) {
+        AnimatedContent(
+            targetState = selectedTab,
+            modifier = Modifier.padding(padding).fillMaxSize(),
+            transitionSpec = {
+                fadeIn(tween(WtcMotion.MEDIUM)) togetherWith fadeOut(tween(WtcMotion.SHORT))
+            },
+            label = "tabContent",
+        ) { tab ->
+            when (tab) {
                 BottomNavTab.CLIENTES -> ClientesScreen(
                     onCreateClick = { navController.navigate("clientes/novo") },
                     onClienteClick = { id -> navController.navigate("clientes/$id/editar") }
