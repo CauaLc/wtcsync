@@ -2,42 +2,57 @@ package br.com.fiap.wtcsync.ui.auth
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import br.com.fiap.wtcsync.R
 import br.com.fiap.wtcsync.data.model.enums.UserRole
+import br.com.fiap.wtcsync.theme.Spacing
+import br.com.fiap.wtcsync.ui.components.WtcButton
+import br.com.fiap.wtcsync.ui.components.WtcScaffold
+import br.com.fiap.wtcsync.ui.components.WtcTextField
+import br.com.fiap.wtcsync.ui.components.WtcTopBar
 import br.com.fiap.wtcsync.util.Resource
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     viewModel: AuthViewModel,
     onRegisterSuccess: (String) -> Unit = {},
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
 ) {
     val context = LocalContext.current
     val userState by viewModel.userState.collectAsState()
+    val isLoading = userState is Resource.Loading
     val scrollState = rememberScrollState()
 
     var name by remember { mutableStateOf("") }
@@ -49,306 +64,179 @@ fun RegisterScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
 
-    // Observa mudanças no estado e reage adequadamente
     LaunchedEffect(userState) {
         when (val state = userState) {
             is Resource.Success -> {
-                Toast.makeText(context, "Registro bem-sucedido!", Toast.LENGTH_SHORT).show()
-                viewModel.resetState() // Reseta o estado após sucesso
-                // 🚨 A navegação deve ser configurada aqui no NavHost
+                viewModel.resetState()
                 onRegisterSuccess(state.data?.email ?: "")
             }
             is Resource.Error -> {
                 Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
-                viewModel.resetState() // Reseta o estado após erro
+                viewModel.resetState()
             }
             else -> {}
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        // --- CONTEÚDO DA TELA ---
+    WtcScaffold(
+        topBar = { WtcTopBar(title = "Cadastro", onBackClick = onBackClick) },
+    ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .padding(padding)
                 .verticalScroll(scrollState)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.Start
+                .padding(horizontal = Spacing.xl, vertical = Spacing.lg),
         ) {
-            // Botão voltar
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier.padding(top = 8.dp),
-                enabled = userState !is Resource.Loading // Desabilita durante loading
-            ) {
-                Icon(
-                    Icons.Default.ArrowBack,
-                    contentDescription = "Voltar",
-                    tint = Color.Black
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             Image(
                 painter = painterResource(id = R.drawable.wtcsync_logo),
-                contentDescription = "Logo",
-                modifier = Modifier.size(60.dp)
+                contentDescription = null,
+                modifier = Modifier.size(60.dp),
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(Spacing.xl))
 
-            // Título
-            Text(
-                text = "Cadastro",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Campo Nome
             Text(
                 text = "Nome",
-                fontSize = 14.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(bottom = 8.dp)
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = Spacing.xs),
             )
-            OutlinedTextField(
+            WtcTextField(
                 value = name,
                 onValueChange = { name = it },
-                placeholder = { Text("João Silva", color = Color.LightGray) },
-                singleLine = true,
-                enabled = userState !is Resource.Loading,
+                placeholder = "João Silva",
+                enabled = !isLoading,
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.LightGray,
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedTextColor = BlackPrimary,
-                    unfocusedTextColor = BlackPrimary
-                ),
-                shape = RoundedCornerShape(8.dp)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(Spacing.lg))
 
-            // Campo Role (Picker)
             Text(
-                text = "Tipo de Usuário",
-                fontSize = 14.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(bottom = 8.dp)
+                text = "Tipo de usuário",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = Spacing.xs),
             )
             ExposedDropdownMenuBox(
                 expanded = expanded,
-                onExpandedChange = {
-                    if (userState !is Resource.Loading) {
-                        expanded = !expanded
-                    }
-                }
+                onExpandedChange = { if (!isLoading) expanded = !expanded },
             ) {
-                OutlinedTextField(
+                WtcTextField(
                     value = if (role == UserRole.CLIENTE) "Cliente" else "Atendente",
                     onValueChange = {},
                     readOnly = true,
-                    enabled = userState !is Resource.Loading,
+                    enabled = !isLoading,
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .menuAnchor(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.LightGray,
-                        unfocusedBorderColor = Color.LightGray,
-                        focusedTextColor = BlackPrimary,
-                        unfocusedTextColor = BlackPrimary
-                    ),
-                    shape = RoundedCornerShape(8.dp)
                 )
-
                 ExposedDropdownMenu(
                     expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                    onDismissRequest = { expanded = false },
                 ) {
                     DropdownMenuItem(
                         text = { Text("Cliente") },
-                        onClick = {
-                            role = UserRole.CLIENTE
-                            expanded = false
-                        }
+                        onClick = { role = UserRole.CLIENTE; expanded = false },
                     )
                     DropdownMenuItem(
                         text = { Text("Atendente") },
-                        onClick = {
-                            role = UserRole.ATENDENTE
-                            expanded = false
-                        }
+                        onClick = { role = UserRole.ATENDENTE; expanded = false },
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(Spacing.lg))
 
-            // Campo Email
             Text(
                 text = "Email",
-                fontSize = 14.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(bottom = 8.dp)
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = Spacing.xs),
             )
-            OutlinedTextField(
+            WtcTextField(
                 value = email,
                 onValueChange = { email = it },
-                placeholder = { Text("JoeDoe@WTC.com", color = Color.LightGray) },
-                singleLine = true,
-                enabled = userState !is Resource.Loading,
+                placeholder = "JoeDoe@WTC.com",
+                enabled = !isLoading,
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.LightGray,
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedTextColor = BlackPrimary,
-                    unfocusedTextColor = BlackPrimary
-                ),
-                shape = RoundedCornerShape(8.dp)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(Spacing.lg))
 
-            // Campo Senha
             Text(
                 text = "Senha",
-                fontSize = 14.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(bottom = 8.dp)
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = Spacing.xs),
             )
-            OutlinedTextField(
+            WtcTextField(
                 value = password,
                 onValueChange = { password = it },
-                placeholder = { Text("••••••••••", color = Color.LightGray) },
+                placeholder = "••••••••••",
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                enabled = userState !is Resource.Loading,
+                enabled = !isLoading,
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = "Toggle password visibility"
+                            contentDescription = if (passwordVisible) "Ocultar senha" else "Mostrar senha",
                         )
                     }
                 },
-                singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.LightGray,
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedTextColor = BlackPrimary,
-                    unfocusedTextColor = BlackPrimary
-                ),
-                shape = RoundedCornerShape(8.dp)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(Spacing.lg))
 
-            // Campo Confirmar Senha
             Text(
                 text = "Confirmar senha",
-                fontSize = 14.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(bottom = 8.dp)
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = Spacing.xs),
             )
-            OutlinedTextField(
+            WtcTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
-                placeholder = { Text("••••••••••", color = Color.LightGray) },
+                placeholder = "••••••••••",
                 visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                enabled = userState !is Resource.Loading,
+                enabled = !isLoading,
                 trailingIcon = {
                     IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                         Icon(
                             imageVector = if (confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = "Toggle password visibility"
+                            contentDescription = if (confirmPasswordVisible) "Ocultar senha" else "Mostrar senha",
                         )
                     }
                 },
-                singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.LightGray,
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedTextColor = BlackPrimary,
-                    unfocusedTextColor = BlackPrimary
-                ),
-                shape = RoundedCornerShape(8.dp)
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(Modifier.height(Spacing.xxl))
 
-            // Botão Conectar (o Spinner foi removido daqui)
-            Button(
+            WtcButton(
+                text = "Cadastrar",
                 onClick = {
                     when {
-                        name.isBlank() -> {
+                        name.isBlank() ->
                             Toast.makeText(context, "Por favor, insira seu nome", Toast.LENGTH_SHORT).show()
-                        }
-                        email.isBlank() -> {
+                        email.isBlank() ->
                             Toast.makeText(context, "Por favor, insira seu email", Toast.LENGTH_SHORT).show()
-                        }
-                        password.isBlank() -> {
+                        password.isBlank() ->
                             Toast.makeText(context, "Por favor, insira sua senha", Toast.LENGTH_SHORT).show()
-                        }
-                        password.length < 6 -> {
+                        password.length < 6 ->
                             Toast.makeText(context, "A senha deve ter pelo menos 6 caracteres", Toast.LENGTH_SHORT).show()
-                        }
-                        password != confirmPassword -> {
+                        password != confirmPassword ->
                             Toast.makeText(context, "As senhas não coincidem", Toast.LENGTH_SHORT).show()
-                        }
-                        else -> {
-                            viewModel.register(email, password, name, role)
-                        }
+                        else -> viewModel.register(email, password, name, role)
                     }
                 },
-                enabled = userState !is Resource.Loading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFFC107)
-                ),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                // Texto do botão muda durante o loading
-                val buttonText = if (userState is Resource.Loading) "Registrando..." else "Conectar"
+                isLoading = isLoading,
+                enabled = !isLoading,
+                modifier = Modifier.fillMaxWidth(),
+            )
 
-                Text(
-                    text = buttonText,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
-
-            // Espaço extra no final para melhor UX
-            Spacer(modifier = Modifier.height(24.dp))
-        }
-
-        // --- OVERLAY DE LOADING (SPINNER NO CENTRO) ---
-        if (userState is Resource.Loading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    // Fundo semitransparente para bloquear a interação
-                    .background(Color.Black.copy(alpha = 0.4f)),
-                contentAlignment = Alignment.Center
-            ) {
-                // O Spinner no centro da tela
-                CircularProgressIndicator(
-                    color = Color.White,
-                    strokeWidth = 4.dp
-                )
-            }
+            Spacer(Modifier.height(Spacing.xl))
         }
     }
 }

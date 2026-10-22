@@ -1,32 +1,46 @@
 package br.com.fiap.wtcsync.segments.ui.create
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import br.com.fiap.wtcsync.theme.*
+import br.com.fiap.wtcsync.theme.Spacing
+import br.com.fiap.wtcsync.theme.WtcTheme
+import br.com.fiap.wtcsync.ui.components.WtcChip
+import br.com.fiap.wtcsync.ui.components.WtcScaffold
+import br.com.fiap.wtcsync.ui.components.WtcTextField
+import br.com.fiap.wtcsync.ui.components.WtcTopBar
 
 @Composable
 fun CreateSegmentScreen(
     viewModel: CreateSegmentViewModel,
     onBackClick: () -> Unit,
-    onSuccess: () -> Unit
+    onSuccess: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
+    val extColors = WtcTheme.colors
 
     LaunchedEffect(state.success) {
         if (state.success) {
@@ -35,229 +49,221 @@ fun CreateSegmentScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BackgroundCream)
-    ) {
-        // Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(HeaderBg)
-                .height(56.dp)
-                .drawBehind {
-                    drawLine(
-                        color = BorderColor,
-                        start = Offset(0f, size.height),
-                        end = Offset(size.width, size.height),
-                        strokeWidth = 2f
-                    )
-                }
-                .padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "CANCELAR",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextSecondary,
-                letterSpacing = 0.44.sp,
-                modifier = Modifier.clickable(onClick = onBackClick)
-            )
-            Text(
-                text = "Novo Segmento",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
-            )
-            Text(
-                text = "SALVAR",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (state.isSubmitting) TextSecondary else SaveText,
-                letterSpacing = 0.44.sp,
-                modifier = Modifier.clickable(enabled = !state.isSubmitting) { viewModel.submit() }
-            )
-        }
-
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            state.error?.let {
-                Text(it, color = Color.Red, fontSize = 14.sp)
-            }
-
-            // Nome
-            Text("NOME DO SEGMENTO", fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                color = TextSecondary, letterSpacing = 0.44.sp)
-            OutlinedTextField(
-                value = state.name,
-                onValueChange = viewModel::onNameChanged,
-                placeholder = { Text("Ex: Clientes VIP 2024") },
-                singleLine = true,
-                isError = state.nameError != null,
-                supportingText = state.nameError?.let { { Text(it, color = Color.Red) } },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BorderColor,
-                    unfocusedBorderColor = BorderColor,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
-                )
-            )
-
-            // Descrição
-            Text("DESCRIÇÃO", fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                color = TextSecondary, letterSpacing = 0.44.sp)
-            OutlinedTextField(
-                value = state.description,
-                onValueChange = viewModel::onDescriptionChanged,
-                placeholder = { Text("Descreva o propósito deste segmento...") },
-                minLines = 3,
-                maxLines = 5,
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BorderColor,
-                    unfocusedBorderColor = BorderColor,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
-                )
-            )
-
-            // Filtros
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                color = Color.White,
-                border = androidx.compose.foundation.BorderStroke(1.dp, BorderColor)
-            ) {
-                Column(modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)) {
-
-                    Text("Filtros de seleção", fontSize = 16.sp, fontWeight = FontWeight.Bold,
-                        color = TextPrimary)
-
-                    // Tags
-                    Text("TAGS", fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                        color = TextSecondary, letterSpacing = 0.44.sp)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        state.tags.forEach { tag ->
-                            Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = YellowBadge,
-                                border = androidx.compose.foundation.BorderStroke(1.dp, BorderColor)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Text(tag, fontSize = 13.sp, color = YellowText,
-                                        fontWeight = FontWeight.Bold)
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = null,
-                                        tint = YellowText,
-                                        modifier = Modifier.size(12.dp)
-                                            .clickable { viewModel.onRemoveTag(tag) }
-                                    )
-                                }
-                            }
+    WtcScaffold(
+        topBar = {
+            WtcTopBar(
+                title = "Novo segmento",
+                onBackClick = onBackClick,
+                actions = {
+                    if (state.isSubmitting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .padding(end = Spacing.sm),
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        TextButton(
+                            onClick = { viewModel.submit() },
+                            enabled = !state.isSubmitting,
+                        ) {
+                            Text(
+                                text = "Salvar",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                            )
                         }
                     }
+                },
+            )
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.xl, vertical = Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Spacing.xl),
+        ) {
+            state.error?.let { errorMsg ->
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.small,
+                    color = MaterialTheme.colorScheme.errorContainer,
+                ) {
+                    Text(
+                        text = errorMsg,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(Spacing.md),
+                    )
+                }
+            }
 
-                    // Status
-                    Text("STATUS", fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                        color = TextSecondary, letterSpacing = 0.44.sp)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("Todos", "Active", "Inactive").forEach { option ->
-                            val selected = state.status == option
-                            Surface(
-                                onClick = { viewModel.onStatusChanged(option) },
-                                shape = RoundedCornerShape(8.dp),
-                                color = if (selected) YellowBadge else Color.White,
-                                border = androidx.compose.foundation.BorderStroke(1.dp, BorderColor)
-                            ) {
-                                Text(
-                                    text = option,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                    fontSize = 14.sp,
-                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (selected) YellowText else TextSecondary
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Text(
+                    text = "Nome do segmento",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                WtcTextField(
+                    value = state.name,
+                    onValueChange = viewModel::onNameChanged,
+                    placeholder = "Ex: Clientes VIP 2024",
+                    errorMessage = state.nameError,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Text(
+                    text = "Descrição",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                WtcTextField(
+                    value = state.description,
+                    onValueChange = viewModel::onDescriptionChanged,
+                    placeholder = "Descreva o propósito deste segmento...",
+                    singleLine = false,
+                    minLines = 3,
+                    maxLines = 5,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 1.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(Spacing.lg),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.lg),
+                ) {
+                    Text(
+                        text = "Filtros de seleção",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        Text(
+                            text = "Tags",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                            state.tags.forEach { tag ->
+                                WtcChip(
+                                    label = tag,
+                                    selected = true,
+                                    onRemove = { viewModel.onRemoveTag(tag) },
                                 )
                             }
                         }
                     }
 
-                    // Score
-                    Text("SCORE MÍNIMO", fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                        color = TextSecondary, letterSpacing = 0.44.sp)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        Text(
+                            text = "Status",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                            listOf("Todos", "Active", "Inactive").forEach { option ->
+                                WtcChip(
+                                    label = option,
+                                    selected = state.status == option,
+                                    onClick = { viewModel.onStatusChanged(option) },
+                                )
+                            }
+                        }
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(
+                                text = "Score mínimo",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                text = "${state.minScore}",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
                         Slider(
                             value = state.minScore.toFloat(),
                             onValueChange = { viewModel.onScoreChanged(it.toInt()) },
                             valueRange = 0f..100f,
-                            modifier = Modifier.weight(1f),
                             colors = SliderDefaults.colors(
-                                thumbColor = YellowBadge,
-                                activeTrackColor = YellowBadge
-                            )
-                        )
-                        Text(
-                            text = "${state.minScore}",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary,
-                            modifier = Modifier.padding(start = 12.dp)
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                inactiveTrackColor = MaterialTheme.colorScheme.outlineVariant,
+                            ),
                         )
                     }
                 }
             }
 
-            // Pré-visualização
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                color = Color.White,
-                border = androidx.compose.foundation.BorderStroke(1.dp, BorderColor)
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 1.dp,
             ) {
                 Row(
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier.padding(Spacing.lg),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column {
-                        Text("PRÉ-VISUALIZAÇÃO", fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold, color = TextSecondary)
-                        Text("Clientes incluídos: ${state.clientCount}",
-                            fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Text(
+                            text = "Pré-visualização",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = "Clientes incluídos: ${state.clientCount}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
                     }
-                    Text("Ver lista", fontSize = 14.sp, color = SaveText,
-                        fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "Ver lista",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 }
             }
 
-            // Info
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFE8F4FD)
+                shape = MaterialTheme.shapes.medium,
+                color = extColors.infoContainer,
             ) {
                 Text(
                     text = "Segmentos dinâmicos são atualizados automaticamente quando um novo cliente atende aos critérios acima.",
-                    modifier = Modifier.padding(16.dp),
-                    fontSize = 13.sp,
-                    color = Color(0xFF1565C0)
+                    modifier = Modifier.padding(Spacing.lg),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = extColors.onInfoContainer,
                 )
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(Spacing.lg))
         }
     }
 }

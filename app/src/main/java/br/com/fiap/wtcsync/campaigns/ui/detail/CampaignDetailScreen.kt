@@ -1,8 +1,6 @@
 package br.com.fiap.wtcsync.campaigns.ui.detail
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,22 +13,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -45,35 +40,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import br.com.fiap.wtcsync.R
 import br.com.fiap.wtcsync.campaigns.domain.Campaign
 import br.com.fiap.wtcsync.data.model.enums.UserRole
-import br.com.fiap.wtcsync.theme.BackgroundCream
-import br.com.fiap.wtcsync.theme.BorderColor
-import br.com.fiap.wtcsync.theme.FooterBg
-import br.com.fiap.wtcsync.theme.FooterBorder
-import br.com.fiap.wtcsync.theme.FooterText
-import br.com.fiap.wtcsync.theme.HeaderBg
-import br.com.fiap.wtcsync.theme.ListDraftBg
-import br.com.fiap.wtcsync.theme.ListDraftText
-import br.com.fiap.wtcsync.theme.ListScheduledBg
-import br.com.fiap.wtcsync.theme.ListScheduledText
-import br.com.fiap.wtcsync.theme.ListSentBg
-import br.com.fiap.wtcsync.theme.ListSentText
-import br.com.fiap.wtcsync.theme.ListStatsIcon
-import br.com.fiap.wtcsync.theme.TextPrimary
-import br.com.fiap.wtcsync.theme.TextSecondary
-import br.com.fiap.wtcsync.theme.YellowBadge
-import br.com.fiap.wtcsync.theme.YellowText
+import br.com.fiap.wtcsync.theme.Spacing
+import br.com.fiap.wtcsync.ui.components.WtcButton
+import br.com.fiap.wtcsync.ui.components.WtcButtonVariant
+import br.com.fiap.wtcsync.ui.components.WtcErrorState
+import br.com.fiap.wtcsync.ui.components.WtcLoading
+import br.com.fiap.wtcsync.ui.components.WtcScaffold
+import br.com.fiap.wtcsync.ui.components.WtcStatusBadge
+import br.com.fiap.wtcsync.ui.components.WtcTopBar
 import coil.compose.rememberAsyncImagePainter
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -83,46 +64,32 @@ import java.util.TimeZone
 fun CampaignDetailScreen(
     viewModel: CampaignDetailViewModel,
     onBackClick: () -> Unit,
-    userRole: UserRole? = null
+    userRole: UserRole? = null,
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BackgroundCream)
-    ) {
-        DetailHeader(onBackClick = onBackClick)
-
+    WtcScaffold(
+        topBar = { WtcTopBar(title = "Campanha", onBackClick = onBackClick) },
+    ) { padding ->
         when {
-            state.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            state.error != null -> {
-                ErrorDetailState(
-                    message = state.error!!,
-                    onRetry = { viewModel.loadCampaign() },
-                    onBack = onBackClick
-                )
-            }
-            state.campaign != null -> {
-                CampaignDetailContent(
-                    campaign = state.campaign!!,
-                    userRole = userRole,
-                    isScheduling = state.isScheduling,
-                    isSending = state.isSending,
-                    actionError = state.actionError,
-                    actionSuccess = state.actionSuccess,
-                    onSchedule = { viewModel.scheduleCampaign(it) },
-                    onSend = { viewModel.sendCampaign() },
-                    onClearFeedback = { viewModel.clearActionFeedback() }
-                )
-            }
+            state.isLoading -> WtcLoading(modifier = Modifier.padding(padding))
+            state.error != null -> WtcErrorState(
+                message = state.error!!,
+                modifier = Modifier.padding(padding),
+                onRetry = { viewModel.loadCampaign() },
+            )
+            state.campaign != null -> CampaignDetailContent(
+                campaign = state.campaign!!,
+                userRole = userRole,
+                isScheduling = state.isScheduling,
+                isSending = state.isSending,
+                actionError = state.actionError,
+                actionSuccess = state.actionSuccess,
+                onSchedule = { viewModel.scheduleCampaign(it) },
+                onSend = { viewModel.sendCampaign() },
+                onClearFeedback = { viewModel.clearActionFeedback() },
+                modifier = Modifier.padding(padding),
+            )
         }
     }
 }
@@ -137,16 +104,17 @@ private fun CampaignDetailContent(
     actionSuccess: String?,
     onSchedule: (String) -> Unit,
     onSend: () -> Unit,
-    onClearFeedback: () -> Unit
+    onClearFeedback: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var showScheduleDialog by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+            .padding(horizontal = Spacing.lg, vertical = Spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xl),
     ) {
         if (campaign.mediaUrl != null) {
             CampaignBanner(mediaUrl = campaign.mediaUrl)
@@ -173,7 +141,7 @@ private fun CampaignDetailContent(
                 isScheduling = isScheduling,
                 isSending = isSending,
                 onScheduleClick = { showScheduleDialog = true },
-                onSendClick = onSend
+                onSendClick = onSend,
             )
         }
 
@@ -190,7 +158,129 @@ private fun CampaignDetailContent(
                 showScheduleDialog = false
                 onSchedule(scheduledAt)
             },
-            onDismiss = { showScheduleDialog = false }
+            onDismiss = { showScheduleDialog = false },
+        )
+    }
+}
+
+@Composable
+private fun CampaignBanner(mediaUrl: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(193.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painter = rememberAsyncImagePainter(
+                    model = mediaUrl,
+                    error = painterResource(id = R.drawable.publi_image),
+                    placeholder = painterResource(id = R.drawable.publi_image),
+                ),
+                contentDescription = "Banner da campanha",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CampaignInfoSection(campaign: Campaign) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        WtcStatusBadge(status = campaign.status)
+        Text(
+            text = campaign.title,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = "Criado por: ${campaign.createdBy}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun BodySection(body: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            Text(
+                text = "Mensagem",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatsSection(campaign: Campaign) {
+    val stats = campaign.stats
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md),
+        ) {
+            Text(
+                text = "Estatísticas",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                StatCard(label = "Alvo", value = "${stats.totalTargeted}")
+                StatCard(label = "Entregues", value = "${stats.totalDelivered}")
+                StatCard(label = "Lidas", value = "${stats.totalRead}")
+                StatCard(label = "Falhas", value = "${stats.totalFailed}")
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatCard(label: String, value: String) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -201,65 +291,113 @@ private fun CampaignActions(
     isScheduling: Boolean,
     isSending: Boolean,
     onScheduleClick: () -> Unit,
-    onSendClick: () -> Unit
+    onSendClick: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
         if (status.lowercase() == "draft") {
-            Button(
+            WtcButton(
+                text = if (isScheduling) "Agendando..." else "Agendar",
                 onClick = onScheduleClick,
+                isLoading = isScheduling,
                 enabled = !isScheduling && !isSending,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = ListScheduledBg),
-                border = BorderStroke(2.dp, BorderColor)
+                variant = WtcButtonVariant.Outline,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        WtcButton(
+            text = if (isSending) "Enviando..." else "Enviar agora",
+            onClick = onSendClick,
+            isLoading = isSending,
+            enabled = !isScheduling && !isSending,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun FeedbackMessage(text: String, isError: Boolean, onDismiss: () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.small,
+        color = if (isError) MaterialTheme.colorScheme.errorContainer
+                else MaterialTheme.colorScheme.primaryContainer,
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(Spacing.md),
+            style = MaterialTheme.typography.bodySmall,
+            color = if (isError) MaterialTheme.colorScheme.onErrorContainer
+                    else MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+    }
+}
+
+@Composable
+private fun ActionButtonsSection(campaign: Campaign) {
+    val openUrl = rememberOpenUrl()
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+        campaign.actions.forEach { action ->
+            val url = campaign.actionUrls[action.action]
+            Surface(
+                onClick = { url?.let { openUrl(it) } },
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.primaryContainer,
             ) {
-                if (isScheduling) {
-                    CircularProgressIndicator(
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .padding(horizontal = Spacing.xl),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.size(20.dp),
-                        color = ListScheduledText,
-                        strokeWidth = 2.dp
                     )
-                } else {
-                    Icon(Icons.Default.CalendarMonth, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(Spacing.sm))
+                    Text(
+                        text = action.title,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
                 }
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = if (isScheduling) "Agendando..." else "Agendar",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = ListScheduledText
-                )
             }
         }
+    }
+}
 
-        Button(
-            onClick = onSendClick,
-            enabled = !isScheduling && !isSending,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = ListSentBg),
-            border = BorderStroke(2.dp, BorderColor)
+@Composable
+private fun FooterSection(campaign: Campaign) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceVariant,
         ) {
-            if (isSending) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    color = ListSentText,
-                    strokeWidth = 2.dp
+            Row(
+                modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Schedule,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(12.dp),
                 )
-            } else {
-                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
+                Text(
+                    text = "Criado em ${campaign.createdAt.take(10)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = if (isSending) "Enviando..." else "Enviar Agora",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = ListSentText
-            )
         }
     }
 }
@@ -268,31 +406,23 @@ private fun CampaignActions(
 @Composable
 private fun ScheduleDateTimeDialog(
     onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     var step by remember { mutableStateOf(0) }
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = System.currentTimeMillis() + 86400000L
+        initialSelectedDateMillis = System.currentTimeMillis() + 86400000L,
     )
     val timePickerState = rememberTimePickerState(
         initialHour = 10,
         initialMinute = 0,
-        is24Hour = true
+        is24Hour = true,
     )
 
     if (step == 0) {
         DatePickerDialog(
             onDismissRequest = onDismiss,
-            confirmButton = {
-                TextButton(onClick = { step = 1 }) {
-                    Text("Próximo")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismiss) {
-                    Text("Cancelar")
-                }
-            }
+            confirmButton = { TextButton(onClick = { step = 1 }) { Text("Próximo") } },
+            dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
         ) {
             DatePicker(state = datePickerState)
         }
@@ -316,284 +446,12 @@ private fun ScheduleDateTimeDialog(
                         cal.set(java.util.Calendar.MILLISECOND, 0)
                         onConfirm(sdf.format(cal.time))
                     }
-                ) {
-                    Text("Confirmar")
-                }
+                ) { Text("Confirmar") }
             },
             dismissButton = {
-                TextButton(onClick = { step = 0 }) {
-                    Text("Voltar")
-                }
-            }
+                TextButton(onClick = { step = 0 }) { Text("Voltar") }
+            },
         )
-    }
-}
-
-@Composable
-private fun FeedbackMessage(text: String, isError: Boolean, onDismiss: () -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
-        color = if (isError) Color(0xFFFFE0E0) else Color(0xFFE0FFE0),
-        border = BorderStroke(1.dp, if (isError) Color.Red.copy(alpha = 0.3f) else Color.Green.copy(alpha = 0.3f))
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(12.dp),
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
-            color = if (isError) Color.Red else Color(0xFF2E7D32)
-        )
-    }
-}
-
-@Composable
-private fun DetailHeader(onBackClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(HeaderBg)
-            .height(56.dp)
-            .drawBehind {
-                drawLine(
-                    color = BorderColor,
-                    start = Offset(0f, size.height),
-                    end = Offset(size.width, size.height),
-                    strokeWidth = 2f
-                )
-            }
-            .padding(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Surface(
-            onClick = onBackClick,
-            modifier = Modifier.shadow(2.dp, RoundedCornerShape(8.dp), ambientColor = BorderColor.copy(alpha = 0.4f), spotColor = BorderColor.copy(alpha = 0.4f)),
-            shape = RoundedCornerShape(8.dp),
-            color = HeaderBg,
-            border = BorderStroke(2.dp, BorderColor)
-        ) {
-            Box(
-                modifier = Modifier.size(40.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Voltar",
-                    tint = TextPrimary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-        Text(
-            text = "Campanha",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextPrimary,
-            letterSpacing = (-0.18).sp
-        )
-        Box(modifier = Modifier.size(40.dp))
-    }
-}
-
-@Composable
-private fun CampaignBanner(mediaUrl: String) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(12.dp), ambientColor = BorderColor, spotColor = BorderColor),
-        shape = RoundedCornerShape(12.dp),
-        color = Color.White,
-        border = BorderStroke(2.dp, BorderColor)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(193.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = rememberAsyncImagePainter(
-                    model = mediaUrl,
-                    error = painterResource(id = R.drawable.publi_image),
-                    placeholder = painterResource(id = R.drawable.publi_image)
-                ),
-                contentDescription = "Banner da Campanha",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        }
-    }
-}
-
-@Composable
-private fun CampaignInfoSection(campaign: Campaign) {
-    val statusLabel = when (campaign.status.lowercase()) {
-        "draft" -> "RASCUNHO"
-        "scheduled" -> "AGENDADA"
-        "sent" -> "ENVIADA"
-        else -> campaign.status.uppercase()
-    }
-    val (statusBg, statusTextColor) = when (campaign.status.lowercase()) {
-        "sent" -> ListSentBg to ListSentText
-        "scheduled" -> ListScheduledBg to ListScheduledText
-        else -> ListDraftBg to ListDraftText
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Surface(
-            shape = RoundedCornerShape(4.dp),
-            color = statusBg
-        ) {
-            Text(
-                text = statusLabel,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = statusTextColor,
-                letterSpacing = 0.44.sp
-            )
-        }
-        Text(
-            text = campaign.title,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = TextPrimary,
-            letterSpacing = (-0.48).sp,
-            lineHeight = 30.sp
-        )
-        Text(
-            text = "Criado por: ${campaign.createdBy}",
-            fontSize = 13.sp,
-            color = TextSecondary
-        )
-    }
-}
-
-@Composable
-private fun BodySection(body: String) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        color = Color.White,
-        border = BorderStroke(2.dp, BorderColor)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "MENSAGEM",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextSecondary,
-                letterSpacing = 0.44.sp
-            )
-            Text(
-                text = body,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal,
-                color = TextPrimary,
-                lineHeight = 26.sp
-            )
-        }
-    }
-}
-
-@Composable
-private fun StatsSection(campaign: Campaign) {
-    val stats = campaign.stats
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        color = Color.White,
-        border = BorderStroke(2.dp, BorderColor)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = "ESTATÍSTICAS",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextSecondary,
-                letterSpacing = 0.44.sp
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                StatCard(label = "Target", value = "${stats.totalTargeted}")
-                StatCard(label = "Entregues", value = "${stats.totalDelivered}")
-                StatCard(label = "Lidas", value = "${stats.totalRead}")
-                StatCard(label = "Falhas", value = "${stats.totalFailed}")
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatCard(label: String, value: String) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Text(
-            text = value,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextPrimary
-        )
-        Text(
-            text = label,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Normal,
-            color = TextSecondary
-        )
-    }
-}
-
-@Composable
-private fun ActionButtonsSection(campaign: Campaign) {
-    val openUrl = rememberOpenUrl()
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        campaign.actions.forEach { action ->
-            val url = campaign.actionUrls[action.action]
-            Surface(
-                onClick = { url?.let { openUrl(it) } },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(4.dp, RoundedCornerShape(12.dp), ambientColor = BorderColor.copy(alpha = 0.4f), spotColor = BorderColor.copy(alpha = 0.4f)),
-                shape = RoundedCornerShape(12.dp),
-                color = YellowBadge,
-                border = BorderStroke(2.dp, BorderColor)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .padding(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = YellowText,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = action.title,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = YellowText,
-                        letterSpacing = 0.75.sp
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -603,78 +461,5 @@ private fun rememberOpenUrl(): (String) -> Unit {
     return { url ->
         val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
         context.startActivity(intent)
-    }
-}
-
-@Composable
-private fun FooterSection(campaign: Campaign) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center
-    ) {
-        Surface(
-            shape = RoundedCornerShape(50),
-            color = FooterBg,
-            border = BorderStroke(1.dp, FooterBorder)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Schedule,
-                    contentDescription = null,
-                    tint = FooterText,
-                    modifier = Modifier.size(12.dp)
-                )
-                Text(
-                    text = "Criado em ${campaign.createdAt.take(10)}",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = FooterText,
-                    letterSpacing = 0.44.sp
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ErrorDetailState(message: String, onRetry: () -> Unit, onBack: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Campanha não encontrada",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextPrimary
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = message,
-            fontSize = 14.sp,
-            color = TextSecondary
-        )
-        Spacer(Modifier.height(24.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(
-                onClick = onBack,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
-            ) {
-                Text("Voltar", color = TextPrimary)
-            }
-            Button(
-                onClick = onRetry,
-                colors = ButtonDefaults.buttonColors(containerColor = YellowBadge)
-            ) {
-                Text("Tentar novamente", color = TextPrimary)
-            }
-        }
     }
 }

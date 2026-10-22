@@ -1,8 +1,5 @@
 package br.com.fiap.wtcsync.ui.crm
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,10 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -25,8 +20,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -41,26 +36,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import br.com.fiap.wtcsync.WtcSyncApp
-import br.com.fiap.wtcsync.theme.BackgroundCream
-import br.com.fiap.wtcsync.theme.BorderColor
-import br.com.fiap.wtcsync.theme.HeaderBg
-import br.com.fiap.wtcsync.theme.ListBorderLight
-import br.com.fiap.wtcsync.theme.SaveText
-import br.com.fiap.wtcsync.theme.TextPrimary
-import br.com.fiap.wtcsync.theme.TextSecondary
-import br.com.fiap.wtcsync.theme.YellowBadge
-import br.com.fiap.wtcsync.theme.YellowText
-import br.com.fiap.wtcsync.ui.components.TagChip
+import br.com.fiap.wtcsync.theme.Spacing
+import br.com.fiap.wtcsync.ui.components.WtcButton
+import br.com.fiap.wtcsync.ui.components.WtcButtonVariant
+import br.com.fiap.wtcsync.ui.components.WtcChip
+import br.com.fiap.wtcsync.ui.components.WtcScaffold
+import br.com.fiap.wtcsync.ui.components.WtcTextField
+import br.com.fiap.wtcsync.ui.components.WtcTopBar
 import br.com.fiap.wtcsync.viewmodel.ClientFormViewModel
 import br.com.fiap.wtcsync.viewmodel.ClientFormViewModelFactory
 
@@ -68,12 +55,12 @@ import br.com.fiap.wtcsync.viewmodel.ClientFormViewModelFactory
 fun ClientFormScreen(
     clienteId: String?,
     onSave: () -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
 ) {
     val app = LocalContext.current.applicationContext as WtcSyncApp
     val viewModel: ClientFormViewModel = viewModel(
         key = clienteId ?: "new",
-        factory = ClientFormViewModelFactory(app.apiService.clientApi, clienteId)
+        factory = ClientFormViewModelFactory(app.apiService.clientApi, clienteId),
     )
     val uiState by viewModel.uiState.collectAsState()
     var showTagDialog by remember { mutableStateOf(false) }
@@ -86,19 +73,18 @@ fun ClientFormScreen(
     if (showTagDialog) {
         AlertDialog(
             onDismissRequest = { showTagDialog = false; tagInput = "" },
-            title = { Text("Adicionar tag", fontWeight = FontWeight.Bold, color = TextPrimary) },
+            title = {
+                Text(
+                    text = "Adicionar tag",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            },
             text = {
-                OutlinedTextField(
+                WtcTextField(
                     value = tagInput,
                     onValueChange = { tagInput = it },
-                    label = { Text("Tag") },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = BorderColor,
-                        unfocusedBorderColor = BorderColor,
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
-                    )
+                    label = "Tag",
+                    modifier = Modifier.fillMaxWidth(),
                 )
             },
             confirmButton = {
@@ -106,231 +92,240 @@ fun ClientFormScreen(
                     viewModel.addTag(tagInput)
                     tagInput = ""
                     showTagDialog = false
-                }) { Text("Adicionar", color = SaveText, fontWeight = FontWeight.Bold) }
+                }) {
+                    Text(
+                        text = "Adicionar",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
             },
             dismissButton = {
                 TextButton(onClick = { showTagDialog = false; tagInput = "" }) {
-                    Text("Cancelar", color = TextSecondary)
+                    Text(text = "Cancelar", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-            }
+            },
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(BackgroundCream)) {
-        // Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(HeaderBg)
-                .height(56.dp)
-                .drawBehind {
-                    drawLine(BorderColor, Offset(0f, size.height), Offset(size.width, size.height), 2f)
-                }
-                .padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "CANCELAR",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextSecondary,
-                letterSpacing = 0.44.sp,
-                modifier = Modifier.clickable(onClick = onCancel)
+    WtcScaffold(
+        topBar = {
+            WtcTopBar(
+                title = if (clienteId == null) "Novo cliente" else "Editar cliente",
+                onBackClick = onCancel,
+                actions = {
+                    if (uiState.isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp).padding(end = Spacing.sm),
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        TextButton(onClick = { viewModel.save() }) {
+                            Text(
+                                text = "Salvar",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                },
             )
-            Text(
-                if (clienteId == null) "Novo Cliente" else "Editar Cliente",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
-            )
-            if (uiState.isSaving) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = SaveText, strokeWidth = 2.dp)
-            } else {
-                Text(
-                    "SALVAR",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = SaveText,
-                    letterSpacing = 0.44.sp,
-                    modifier = Modifier.clickable { viewModel.save() }
-                )
-            }
-        }
-
-        // Error banner
-        if (uiState.error != null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFFFFEBEE))
-                    .padding(horizontal = 20.dp, vertical = 10.dp)
-            ) {
-                Text(uiState.error!!, color = Color(0xFFB71C1C), fontSize = 13.sp)
-            }
-        }
-
+        },
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .padding(padding),
         ) {
-            Surface(
-                border = BorderStroke(1.5.dp, ListBorderLight),
-                shape = RoundedCornerShape(16.dp),
-                color = Color.White
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
+            if (uiState.error != null) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.errorContainer,
                 ) {
-                    // Avatar
-                    Box(modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                        Surface(
-                            modifier = Modifier.size(80.dp),
-                            shape = CircleShape,
-                            color = Color(0xFFE5E5E5),
-                            border = BorderStroke(2.dp, ListBorderLight)
-                        ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.padding(16.dp), tint = TextSecondary)
-                            }
-                        }
-                        Surface(
-                            modifier = Modifier.size(28.dp).align(Alignment.BottomEnd),
-                            shape = CircleShape,
-                            color = YellowBadge,
-                            border = BorderStroke(2.dp, BorderColor)
-                        ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.padding(5.dp), tint = YellowText)
-                            }
-                        }
-                    }
+                    Text(
+                        text = uiState.error!!,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(horizontal = Spacing.xl, vertical = Spacing.sm),
+                    )
+                }
+            }
 
-                    // Nome
-                    FormField(label = "NOME COMPLETO") {
-                        OutlinedTextField(
-                            value = uiState.name,
-                            onValueChange = { viewModel.onNameChange(it) },
-                            placeholder = { Text("Ex: João Silva", color = TextSecondary) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = formFieldColors()
-                        )
-                    }
-
-                    // Email
-                    FormField(label = "EMAIL") {
-                        OutlinedTextField(
-                            value = uiState.email,
-                            onValueChange = { viewModel.onEmailChange(it) },
-                            placeholder = { Text("contato@empresa.com", color = TextSecondary) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = formFieldColors()
-                        )
-                    }
-
-                    // Telefone
-                    FormField(label = "TELEFONE") {
-                        OutlinedTextField(
-                            value = uiState.phone,
-                            onValueChange = { viewModel.onPhoneChange(it) },
-                            placeholder = { Text("+55 (11) 99999-9999", color = TextSecondary) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = formFieldColors()
-                        )
-                    }
-
-                    // Status
-                    FormField(label = "STATUS") {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("Active", "Inactive", "Prospect").forEach { option ->
-                                val isSelected = uiState.status == option
-                                Surface(
-                                    onClick = { viewModel.onStatusChange(option) },
-                                    modifier = Modifier.weight(1f).height(44.dp),
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = if (isSelected) YellowBadge else Color.White,
-                                    border = BorderStroke(
-                                        if (isSelected) 2.dp else 1.5.dp,
-                                        if (isSelected) BorderColor else ListBorderLight
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = Spacing.xl, vertical = Spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(Spacing.xl),
+            ) {
+                Surface(
+                    shape = MaterialTheme.shapes.large,
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 0.dp,
+                    shadowElevation = 1.dp,
+                ) {
+                    Column(
+                        modifier = Modifier.padding(Spacing.xl),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.xl),
+                    ) {
+                        // Avatar placeholder
+                        Box(modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                            Surface(
+                                modifier = Modifier.size(80.dp),
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                            ) {
+                                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                    Icon(
+                                        Icons.Default.Person,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(40.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text(
-                                            text = option,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (isSelected) YellowText else TextSecondary
-                                        )
+                                }
+                            }
+                            Surface(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .align(Alignment.BottomEnd),
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                            ) {
+                                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    )
+                                }
+                            }
+                        }
+
+                        FormField(label = "Nome completo") {
+                            WtcTextField(
+                                value = uiState.name,
+                                onValueChange = { viewModel.onNameChange(it) },
+                                placeholder = "Ex: João Silva",
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+
+                        FormField(label = "Email") {
+                            WtcTextField(
+                                value = uiState.email,
+                                onValueChange = { viewModel.onEmailChange(it) },
+                                placeholder = "contato@empresa.com",
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+
+                        FormField(label = "Telefone") {
+                            WtcTextField(
+                                value = uiState.phone,
+                                onValueChange = { viewModel.onPhoneChange(it) },
+                                placeholder = "+55 (11) 99999-9999",
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+
+                        FormField(label = "Status") {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                            ) {
+                                listOf("Active", "Inactive", "Prospect").forEach { option ->
+                                    val isSelected = uiState.status == option
+                                    Surface(
+                                        onClick = { viewModel.onStatusChange(option) },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(44.dp),
+                                        shape = MaterialTheme.shapes.small,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                                else MaterialTheme.colorScheme.surfaceVariant,
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = option,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    // Lead Score
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("LEAD SCORE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondary, letterSpacing = 0.44.sp)
-                            Text("${uiState.score.toInt()}%", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-                        }
-                        Slider(
-                            value = uiState.score,
-                            onValueChange = { viewModel.onScoreChange(it) },
-                            valueRange = 0f..100f,
-                            colors = SliderDefaults.colors(
-                                thumbColor = YellowBadge,
-                                activeTrackColor = YellowBadge,
-                                inactiveTrackColor = ListBorderLight
-                            )
-                        )
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("FRIO", fontSize = 11.sp, color = TextSecondary)
-                            Text("QUENTE", fontSize = 11.sp, color = TextSecondary)
-                        }
-                    }
-
-                    // Tags
-                    FormField(label = "TAGS E SEGMENTOS") {
-                        Row(
-                            modifier = Modifier.horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            uiState.tags.forEach { tag ->
-                                TagChip(label = tag, onRemove = { viewModel.removeTag(tag) })
-                            }
-                            Surface(
-                                onClick = { showTagDialog = true },
-                                shape = RoundedCornerShape(50),
-                                color = Color.Transparent,
-                                border = BorderStroke(1.5.dp, BorderColor)
+                        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
                                 Text(
-                                    "+ Adicionar",
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    fontSize = 12.sp,
-                                    color = TextSecondary
+                                    text = "Lead score",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    text = "${uiState.score.toInt()}%",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
+                            Slider(
+                                value = uiState.score,
+                                onValueChange = { viewModel.onScoreChange(it) },
+                                valueRange = 0f..100f,
+                                colors = SliderDefaults.colors(
+                                    thumbColor = MaterialTheme.colorScheme.primary,
+                                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                                    inactiveTrackColor = MaterialTheme.colorScheme.outlineVariant,
+                                ),
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text("Frio", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Quente", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+
+                        FormField(label = "Tags e segmentos") {
+                            Row(
+                                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                            ) {
+                                uiState.tags.forEach { tag ->
+                                    WtcChip(
+                                        label = tag,
+                                        selected = true,
+                                        onRemove = { viewModel.removeTag(tag) },
+                                    )
+                                }
+                                WtcChip(
+                                    label = "+ Adicionar",
+                                    onClick = { showTagDialog = true },
                                 )
                             }
                         }
-                    }
 
-                    // Notas
-                    FormField(label = "NOTAS DO CLIENTE") {
-                        OutlinedTextField(
-                            value = uiState.notes,
-                            onValueChange = { viewModel.onNotesChange(it) },
-                            placeholder = { Text("Escreva observações importantes aqui...", color = TextSecondary) },
-                            minLines = 4,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = formFieldColors()
-                        )
+                        FormField(label = "Notas do cliente") {
+                            WtcTextField(
+                                value = uiState.notes,
+                                onValueChange = { viewModel.onNotesChange(it) },
+                                placeholder = "Escreva observações importantes aqui...",
+                                singleLine = false,
+                                minLines = 4,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
                     }
                 }
             }
@@ -340,16 +335,12 @@ fun ClientFormScreen(
 
 @Composable
 private fun FormField(label: String, content: @Composable () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondary, letterSpacing = 0.44.sp)
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         content()
     }
 }
-
-@Composable
-private fun formFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = BorderColor,
-    unfocusedBorderColor = BorderColor,
-    focusedContainerColor = Color.White,
-    unfocusedContainerColor = Color.White
-)

@@ -1,10 +1,7 @@
 package br.com.fiap.wtcsync.campaigns.ui.client
 
 import android.app.Application
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,16 +14,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,15 +27,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -51,24 +39,13 @@ import br.com.fiap.wtcsync.R
 import br.com.fiap.wtcsync.WtcSyncApp
 import br.com.fiap.wtcsync.campaigns.data.CampaignRepository
 import br.com.fiap.wtcsync.campaigns.domain.Campaign
-import br.com.fiap.wtcsync.theme.BackgroundCream
-import br.com.fiap.wtcsync.theme.BorderColor
-import br.com.fiap.wtcsync.theme.FooterBg
-import br.com.fiap.wtcsync.theme.FooterBorder
-import br.com.fiap.wtcsync.theme.FooterText
-import br.com.fiap.wtcsync.theme.HeaderBg
-import br.com.fiap.wtcsync.theme.ListBorderLight
-import br.com.fiap.wtcsync.theme.ListDraftBg
-import br.com.fiap.wtcsync.theme.ListDraftText
-import br.com.fiap.wtcsync.theme.ListScheduledBg
-import br.com.fiap.wtcsync.theme.ListScheduledText
-import br.com.fiap.wtcsync.theme.ListSentBg
-import br.com.fiap.wtcsync.theme.ListSentText
-import br.com.fiap.wtcsync.theme.ListStatsIcon
-import br.com.fiap.wtcsync.theme.TextPrimary
-import br.com.fiap.wtcsync.theme.TextSecondary
-import br.com.fiap.wtcsync.theme.YellowBadge
-import br.com.fiap.wtcsync.theme.YellowText
+import br.com.fiap.wtcsync.theme.Spacing
+import br.com.fiap.wtcsync.ui.components.WtcEmptyState
+import br.com.fiap.wtcsync.ui.components.WtcErrorState
+import br.com.fiap.wtcsync.ui.components.WtcLoading
+import br.com.fiap.wtcsync.ui.components.WtcScaffold
+import br.com.fiap.wtcsync.ui.components.WtcStatusBadge
+import br.com.fiap.wtcsync.ui.components.WtcTopBar
 import br.com.fiap.wtcsync.util.Resource
 import coil.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -141,75 +118,37 @@ fun ClientCampaignScreen(application: Application) {
     )
     val state by viewModel.uiState.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BackgroundCream)
-    ) {
-        HeaderSection()
-
+    WtcScaffold(
+        topBar = { WtcTopBar(title = "Campanha Recebida") },
+    ) { padding ->
         when {
-            state.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            state.error != null -> {
-                ErrorState(
-                    message = state.error!!,
-                    onRetry = { viewModel.loadLastCampaign() }
-                )
-            }
-            state.isEmpty -> {
-                EmptyState()
-            }
-            state.campaign != null -> {
-                CampaignDetailView(campaign = state.campaign!!)
-            }
+            state.isLoading -> WtcLoading(modifier = Modifier.padding(padding))
+            state.error != null -> WtcErrorState(
+                message = state.error!!,
+                modifier = Modifier.padding(padding),
+                onRetry = { viewModel.loadLastCampaign() },
+            )
+            state.isEmpty -> WtcEmptyState(
+                title = "Nenhuma campanha recebida",
+                description = "Você ainda não recebeu nenhuma campanha.",
+                modifier = Modifier.padding(padding),
+            )
+            state.campaign != null -> CampaignDetailView(
+                campaign = state.campaign!!,
+                modifier = Modifier.padding(padding),
+            )
         }
     }
 }
 
 @Composable
-private fun HeaderSection() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(HeaderBg)
-            .height(56.dp)
-            .drawBehind {
-                drawLine(
-                    color = ListBorderLight,
-                    start = Offset(0f, size.height),
-                    end = Offset(size.width, size.height),
-                    strokeWidth = 2f
-                )
-            }
-            .padding(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.Start,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "Campanha Recebida",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextPrimary,
-            letterSpacing = (-0.18).sp
-        )
-    }
-}
-
-@Composable
-private fun CampaignDetailView(campaign: Campaign) {
+private fun CampaignDetailView(campaign: Campaign, modifier: Modifier = Modifier) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+            .padding(horizontal = Spacing.lg, vertical = Spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xl),
     ) {
         if (campaign.mediaUrl != null) {
             CampaignBanner(mediaUrl = campaign.mediaUrl)
@@ -228,34 +167,33 @@ private fun CampaignDetailView(campaign: Campaign) {
         }
 
         FooterSection(campaign = campaign)
+
+        Spacer(Modifier.height(Spacing.lg))
     }
 }
 
 @Composable
 private fun CampaignBanner(mediaUrl: String) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(12.dp), ambientColor = BorderColor, spotColor = BorderColor),
-        shape = RoundedCornerShape(12.dp),
-        color = Color.White,
-        border = BorderStroke(2.dp, BorderColor)
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant,
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(193.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Image(
                 painter = rememberAsyncImagePainter(
                     model = mediaUrl,
                     error = painterResource(id = R.drawable.publi_image),
-                    placeholder = painterResource(id = R.drawable.publi_image)
+                    placeholder = painterResource(id = R.drawable.publi_image),
                 ),
-                contentDescription = "Banner da Campanha",
+                contentDescription = "Banner da campanha",
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
             )
         }
     }
@@ -263,44 +201,18 @@ private fun CampaignBanner(mediaUrl: String) {
 
 @Composable
 private fun CampaignInfoSection(campaign: Campaign) {
-    val statusLabel = when (campaign.status.lowercase()) {
-        "draft" -> "RASCUNHO"
-        "scheduled" -> "AGENDADA"
-        "sent" -> "ENVIADA"
-        else -> campaign.status.uppercase()
-    }
-    val (statusBg, statusTextColor) = when (campaign.status.lowercase()) {
-        "sent" -> ListSentBg to ListSentText
-        "scheduled" -> ListScheduledBg to ListScheduledText
-        else -> ListDraftBg to ListDraftText
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Surface(
-            shape = RoundedCornerShape(4.dp),
-            color = statusBg
-        ) {
-            Text(
-                text = statusLabel,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = statusTextColor,
-                letterSpacing = 0.44.sp
-            )
-        }
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        WtcStatusBadge(status = campaign.status)
         Text(
             text = campaign.title,
-            fontSize = 24.sp,
+            style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.ExtraBold,
-            color = TextPrimary,
-            letterSpacing = (-0.48).sp,
-            lineHeight = 30.sp
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = "Criado por: ${campaign.createdBy}",
-            fontSize = 13.sp,
-            color = TextSecondary
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -309,27 +221,23 @@ private fun CampaignInfoSection(campaign: Campaign) {
 private fun BodySection(body: String) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        color = Color.White,
-        border = BorderStroke(2.dp, BorderColor)
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp,
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
             Text(
-                text = "MENSAGEM",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextSecondary,
-                letterSpacing = 0.44.sp
+                text = "Mensagem",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 text = body,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal,
-                color = TextPrimary,
-                lineHeight = 26.sp
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
     }
@@ -340,26 +248,24 @@ private fun StatsSection(campaign: Campaign) {
     val stats = campaign.stats
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        color = Color.White,
-        border = BorderStroke(2.dp, BorderColor)
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp,
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
             Text(
-                text = "ESTATÍSTICAS",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextSecondary,
-                letterSpacing = 0.44.sp
+                text = "Estatísticas",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                StatCard(label = "Target", value = "${stats.totalTargeted}")
+                StatCard(label = "Alvo", value = "${stats.totalTargeted}")
                 StatCard(label = "Entregues", value = "${stats.totalDelivered}")
                 StatCard(label = "Lidas", value = "${stats.totalRead}")
                 StatCard(label = "Falhas", value = "${stats.totalFailed}")
@@ -372,19 +278,18 @@ private fun StatsSection(campaign: Campaign) {
 private fun StatCard(label: String, value: String) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         Text(
             text = value,
-            fontSize = 20.sp,
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = TextPrimary
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = label,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Normal,
-            color = TextSecondary
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -392,39 +297,35 @@ private fun StatCard(label: String, value: String) {
 @Composable
 private fun ActionButtonsSection(campaign: Campaign) {
     val openUrl = rememberOpenUrl()
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
         campaign.actions.forEach { action ->
             val url = campaign.actionUrls[action.action]
             Surface(
                 onClick = { url?.let { openUrl(it) } },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(4.dp, RoundedCornerShape(12.dp), ambientColor = BorderColor.copy(alpha = 0.4f), spotColor = BorderColor.copy(alpha = 0.4f)),
-                shape = RoundedCornerShape(12.dp),
-                color = YellowBadge,
-                border = BorderStroke(2.dp, BorderColor)
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.primaryContainer,
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
-                        .padding(horizontal = 24.dp),
+                        .padding(horizontal = Spacing.xl),
                     horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Star,
                         contentDescription = null,
-                        tint = YellowText,
-                        modifier = Modifier.size(20.dp)
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(20.dp),
                     )
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(Spacing.sm))
                     Text(
                         text = action.title,
-                        fontSize = 15.sp,
+                        style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
-                        color = YellowText,
-                        letterSpacing = 0.75.sp
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
             }
@@ -445,87 +346,29 @@ private fun rememberOpenUrl(): (String) -> Unit {
 private fun FooterSection(campaign: Campaign) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center
+        horizontalArrangement = Arrangement.Center,
     ) {
         Surface(
-            shape = RoundedCornerShape(50),
-            color = FooterBg,
-            border = BorderStroke(1.dp, FooterBorder)
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceVariant,
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.xs),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
             ) {
                 Icon(
                     imageVector = Icons.Default.Schedule,
                     contentDescription = null,
-                    tint = FooterText,
-                    modifier = Modifier.size(12.dp)
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(12.dp),
                 )
                 Text(
                     text = "Criado em ${campaign.createdAt.take(10)}",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = FooterText,
-                    letterSpacing = 0.44.sp
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun ErrorState(message: String, onRetry: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Erro ao carregar campanha",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextPrimary
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = message,
-            fontSize = 14.sp,
-            color = TextSecondary
-        )
-        Spacer(Modifier.height(24.dp))
-        Button(
-            onClick = onRetry,
-            colors = ButtonDefaults.buttonColors(containerColor = YellowBadge)
-        ) {
-            Text("Tentar novamente", color = TextPrimary)
-        }
-    }
-}
-
-@Composable
-private fun EmptyState() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Nenhuma campanha recebida",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextPrimary
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "Você ainda não recebeu nenhuma campanha.",
-            fontSize = 14.sp,
-            color = TextSecondary
-        )
     }
 }
